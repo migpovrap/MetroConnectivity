@@ -5,7 +5,6 @@ import networkx as nx
 import os
 import sys
 from matplotlib.lines import Line2D
-import numpy as np
 
 # Function to create and save the graph
 def create_graph(test_name):
@@ -24,6 +23,7 @@ def create_graph(test_name):
 
     # Create the graph
     G = nx.MultiGraph()
+    G.add_nodes_from(range(1, n + 1))  # Add all nodes to the graph
     for x, y, line in edges:
         G.add_edge(x, y, line=line)
 
