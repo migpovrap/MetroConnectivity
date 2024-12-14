@@ -38,6 +38,7 @@
 
 # Executables
 main
+test_generator
 
 # Test Results
 tests/*.diff
