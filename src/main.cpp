@@ -44,10 +44,10 @@ int main() {
   std::cin >> n >> m >> num_l;
 
   // x, y, l: Station x and Station y are connected by line l.
-  graph.resize(n + 1);
+  graph.resize(n);
   for (int i = 0; i < m; ++i) {
     int x, y, l;
-    std::cin >> x >> y >> l;
+    std::cin >> x >> y >> l, --x, --y;
     graph[x].emplace_back(y, l);
     graph[y].emplace_back(x, l);
   }
