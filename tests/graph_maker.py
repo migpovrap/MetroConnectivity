@@ -1,18 +1,18 @@
-# TODO: Fix pylance/pylint errors. Script is working as intended though.
 # type: ignore
 # pylint:skip-file
-
 import matplotlib.pyplot as plt
 import networkx as nx
 import os
 import sys
+from matplotlib.lines import Line2D
+import numpy as np
 
 # Function to create and save the graph
 def create_graph(test_name):
     # Build the path dynamically based on the current directory
     current_dir = os.getcwd()
     input_file = os.path.join(current_dir, f"{test_name}.in")
-    output_file = os.path.join(current_dir, f"{test_name}.png")
+    output_file = os.path.join(current_dir, f"{test_name}.png")  # Use test_name.png as the output file
     
     # Open and parse the input file
     with open(input_file, 'r') as f:
@@ -27,49 +27,63 @@ def create_graph(test_name):
     for x, y, line in edges:
         G.add_edge(x, y, line=line)
 
-    # Generate positions for nodes
+    # Dynamically generate a list of bright, visually distinct colors based on the number of unique lines
+    unique_lines = sorted(set(line for _, _, line in edges))
+    bright_colors = plt.cm.tab10.colors  # Using the tab10 color map which has 10 distinct colors
+
+    # Ensure that each unique line gets a color, and use modulo to repeat colors if there are more lines than colors
+    line_colors = {line: bright_colors[i % len(bright_colors)] for i, line in enumerate(unique_lines)}
+
+    # Node placement optimized to reduce crossings
     pos = nx.kamada_kawai_layout(G)
 
-    # Define a list of bright, visually distinct colors
-    bright_colors = [
-        "#FF5733",  # Red-Orange
-        "#33C1FF",  # Sky Blue
-        "#75FF33",  # Bright Green
-        "#FFC300",  # Yellow
-        "#DA33FF",  # Bright Purple
-        "#FF33A6",  # Pink
-        "#33FFBD",  # Teal
-        "#FF6F61",  # Light Red
-        "#B833FF",  # Dark Pink
-        "#33A1FF"   # Light Blue
-    ]
-
-    # Dynamically assign colors to unique line types
-    unique_lines = sorted(set(line for _, _, line in edges))
-    line_colors = {line: bright_colors[i % len(bright_colors)] for i, line in enumerate(unique_lines)}
+    # Function to generate a curved path
+    def get_curve(xy1, xy2, concave_up=True, curvature=0.1):
+        x1, y1 = xy1
+        x2, y2 = xy2
+        if concave_up:
+            control = [(x1 + x2) / 2, (y1 + y2) / 2 + curvature]
+        else:
+            control = [(x1 + x2) / 2, (y1 + y2) / 2 - curvature]
+        return [xy1, control, xy2]
 
     # Draw the graph
     plt.figure(figsize=(8, 6))
-    nx.draw_networkx_nodes(G, pos, node_color='white', edgecolors='black', node_size=700, linewidths=1.5)
+    nx.draw_networkx_nodes(G, pos, node_color='white', edgecolors='black', node_size=1000)
     nx.draw_networkx_labels(G, pos, font_size=12, font_weight='bold')
 
-    # Draw edges and assign colors based on their 'line' attribute
-    for x, y, line in edges:
-        nx.draw_networkx_edges(G, pos, edgelist=[(x, y)], width=4, edge_color=line_colors[line], style='solid')
-    
+    # Track edges drawn to handle overlapping
+    edge_drawn = {}  # Store edge instances to alternate between curvatures
+    for (u, v, line) in edges:
+        edge_key = (min(u, v), max(u, v))
+        if edge_key in edge_drawn:
+            curvature = 0.3 * (-1)**edge_drawn[edge_key]  # Alternate curvature for multiple edges
+            edge_drawn[edge_key] += 1
+        else:
+            curvature = 0.0  # Straight edge for the first instance
+            edge_drawn[edge_key] = 1
+
+        # Draw the edge with alternating curvatures
+        nx.draw_networkx_edges(
+            G, pos, edgelist=[(u, v)],
+            width=5, alpha=0.8, edge_color=line_colors[line],
+            connectionstyle=f"arc3,rad={curvature}"
+        )
+
     # Create a dynamic legend for line colors
-    from matplotlib.lines import Line2D
     legend_elements = [
-        Line2D([0], [0], color=color, lw=4, label=f"Line {line}") for line, color in line_colors.items()
+        Line2D([0], [0], color=color, lw=4, label=f'Line {line}')
+        for line, color in line_colors.items()
     ]
+    
+    # Use bbox_to_anchor to place the legend outside the graph to the right
+    plt.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1), fontsize=10, frameon=False)
 
-    # Dynamically position the legend to avoid overlap
-    plt.legend(handles=legend_elements, loc='best', fontsize='10', frameon=True)
-
-    # Save the graph to a file
+    # Remove the axis and the surrounding border
     plt.axis('off')
-    plt.tight_layout()
-    plt.savefig(output_file)
+
+    # Save the graph with a white background and no border
+    plt.savefig(output_file, bbox_inches='tight', transparent=False, facecolor='white')  # White background
     plt.close()  # Close the figure without displaying it
 
 # Main execution
