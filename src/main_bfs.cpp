@@ -47,7 +47,6 @@ int bfs(int start, int end) {
             }
         }
     }
-
     return (min_changes == std::numeric_limits<int>::max()) ? -1 : min_changes; // Return -1 if no path is found
 }
 

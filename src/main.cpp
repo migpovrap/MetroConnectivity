@@ -3,6 +3,7 @@
 #include <tuple>
 #include <queue>
 #include <algorithm>
+#include <climits>
 
 int n, m, num_l; // n: number of stations, m: number of connections, num_l: number of lines.
 std::vector<std::vector<std::pair<int, int>>> graph; // x, y, l: Station x and Station y are connected by line l.
