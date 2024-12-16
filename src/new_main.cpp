@@ -4,94 +4,75 @@
 #include <queue>
 #include <algorithm>
 #include <climits>
-#include <stack>
 
 int n, m, num_l; // n: number of stations, m: number of connections, num_l: number of lines.
-std::vector<std::vector<std::pair<int, int>>> graph; // x, y, l: Station x and Station y are connected by line l.
-std::vector<std::vector<int>> scc_graph; // Graph of SCCs
-std::vector<int> scc_ids; // SCC id for each station
-std::vector<bool> visited; // Visited stations for SCC discovery
-std::stack<int> dfs_stack; // Stack used in Tarjan's Algorithm to track the current path.
-int scc_counter = 0; // Counter for the number of SCCs identified.
+std::vector<std::vector<std::pair<int, int>>> graph;  // x, y, l: Station x and Station y are connected by line l.
+std::vector<std::vector<int>> station_to_lines;  // Stations and the corresponding lines
+std::vector<std::vector<std::pair<int, int>>> line_graph;  // Connetions of all the lines
 
-// Data used for the Tarjan's algorithm
-std::vector<int> low, ids; // `low` and `ids` arrays for Tarjan's Algorithm.
-int id_counter = 0; // Counter for assigning unique ids during DFS traversal.
-
-// Function implementing Tarjan's Algorithm for finding SCCs
-void tarjanDFS(int at) {
-  visited[at] = true; // Mark the current node as visited
-  ids[at] = low[at] = id_counter++; // Assign a unique id and initialize its low-link value
-  dfs_stack.push(at); // Push the current node onto the stack
-
-  // Traverse all neighbors of the current station
-  for (const auto& neighbor : graph[at]) {
-    int to = neighbor.first;
-    if (ids[to] == -1) { // If the neighbor hasn't been visited, perform DFS on it
-      tarjanDFS(to);
-      low[at] = std::min(low[at], low[to]); // Update the low-link value
-    } else if (visited[to]) { // If the neighbor is on the stack, it's part of the current SCC
-      low[at] = std::min(low[at], ids[to]);
-    }
-  }
-
-  // If the current station is a root node of an SCC
-  if (low[at] == ids[at]) {
-    while (true) {
-      int node = dfs_stack.top();
-      dfs_stack.pop();
-      visited[node] = false; // Mark the node as no longer in the stack
-      scc_ids[node] = scc_counter; // Assign the SCC id to the node
-      if (node == at) break; // Stop when the root node is reached
-    }
-    scc_counter++; // Increment the SCC counter
-  }
-}
-
-// Function to find all SCCs in the graph using Tarjan's Algorithm
-void findSCCs() {
-  ids.assign(n, -1);  // Initialize ids array with -1
-  low.assign(n, 0); // Initialize low-link values to 0
-  visited.assign(n, false); // Mark all stations as unvisited
-  scc_ids.assign(n, -1); // Initialize SCC ids to -1
-
-  // Perform DFS for each station that hasn't been visited
-  for (int i = 0; i < n; ++i) {
-    if (ids[i] == -1) tarjanDFS(i);
-  }
-}
-
-int dijkstra(int start, int end) {
-  // (number of changes, current station, current line)
-  std::priority_queue<std::tuple<int, int, int>, std::vector<std::tuple<int, int, int>>, std::greater<std::tuple<int, int, int>>> pq;
-  std::vector<int> min_changes(n, INT_MAX);
+// Function to build a line graph representing transitions between lines and stations
+void buildLineGraph() {
+  station_to_lines.assign(n, std::vector<int>());
+  line_graph.assign(num_l, std::vector<std::pair<int, int>>());
   
-  pq.emplace(0, start, -1); // Start with no line (-1) and 0 changes
-  min_changes[start] = 0;
-
-  while (!pq.empty()) {
-    int changes = std::get<0>(pq.top());
-    int current_station = std::get<1>(pq.top());
-    int current_line = std::get<2>(pq.top());
-    pq.pop();
-
-    if (current_station == end) return changes; // If it as reached the desired station retunrs the required number of line changes
-    if (changes > min_changes[current_station]) continue; // If we've already found a better path, skip this one
-
-    // Traverse all neighbors of the current station
-    for (const auto& station : graph[current_station]) {
-      // Count a change only when switching to a different line
-      int next_station = station.first;
-      int next_line = station.second;
-      int new_changes = (current_line != -1 && next_line != current_line) ? changes + 1 : changes; // If not the same line adds one line change, also checks if it is connected
-      // If a better path is found, update and push to the queue
-      if (new_changes < min_changes[next_station]) {
-        min_changes[next_station] = new_changes;
-        pq.emplace(new_changes, next_station, next_line);
+  // Map each station to the lines that pass through it
+  for (int station = 0; station < n; ++station) {
+    for (const auto& edge : graph[station]) {
+      int line = edge.second;
+      station_to_lines[station].push_back(line); // Add the line to the station's line list
+    }
+  }
+  
+  // Build the line graph by connecting lines that share stations
+  for (int station = 0; station < n; ++station) {
+    auto& lines = station_to_lines[station];
+    sort(lines.begin(), lines.end()); // Sort the lines to prepare for removing duplicates
+    lines.erase(unique(lines.begin(), lines.end()), lines.end()); // Remove duplicate lines
+    
+    // Add all pairs of lines that share this station
+    for (size_t i = 0; i < lines.size(); ++i) {
+      for (size_t j = i + 1; j < lines.size(); ++j) {
+        line_graph[lines[i]].emplace_back(lines[j], station);
+        line_graph[lines[j]].emplace_back(lines[i], station);
       }
     }
   }
-  return -1; // No path found
+}
+
+// Implementation of Dijkstra's algorithm to find the minimum required line changes
+int dijkstra(int start, int end) {
+  // (number of changes, current station, current line)
+  std::priority_queue<std::pair<int, int>,std::vector<std::pair<int, int>>,std::greater<std::pair<int, int>>> pq;
+  std::vector<int> dist(num_l, INT_MAX); // Number of line changes array initialized to maximum value
+  
+  // Initialize the priority queue with all lines that pass through the start station
+  for (int start_line : station_to_lines[start]) {
+    pq.emplace(0, start_line); // Starting with no changes for each line
+    dist[start_line] = 0; // Set distance for each start line to 0
+  }
+  
+  while (!pq.empty()) {
+    int changes = pq.top().first;
+    int curr_line = pq.top().second;
+    pq.pop();
+    
+     // Check if the current line passes through the end station
+    if (std::find(station_to_lines[end].begin(), 
+      station_to_lines[end].end(), 
+      curr_line) != station_to_lines[end].end()) {
+      return changes; // Return the number of changes if end station is reached
+    }
+    
+     // Traverse the line graph to find the next possible lines
+    for (const auto& next : line_graph[curr_line]) {
+      int next_line = next.first;
+      if (changes + 1 < dist[next_line]) {
+        dist[next_line] = changes + 1;
+        pq.emplace(changes + 1, next_line);
+      }
+    }
+  }
+  return -1; // Return -1 if no path is founds
 }
 
 int main() {
@@ -105,24 +86,36 @@ int main() {
     int x, y, l;
     std::cin >> x >> y >> l;
     --x; --y; --l; // Convert to 0-based indexing
-    graph[x].emplace_back(y, l);
-    graph[y].emplace_back(x, l);
+    graph[x].emplace_back(y, l); // Add connection from station x to station y
+    graph[y].emplace_back(x, l); // Add reverse connection from station y to station x
   }
 
-  // Find all SCCs in the graph
-  findSCCs();
-
-  if (scc_counter > 1) { // If more than one scc is found, graph is not fully connected
-    std::cout << -1 << std::endl;
-    return 0;
+  // Check if any station is disconnected
+  for (int i = 0; i < n; ++i) {
+    if (graph[i].empty()) {
+      std::cout << -1 << std::endl;
+      return 0;
+    }
   }
+
+  buildLineGraph(); // Construct the line graph based on shared stations
+
+  /*
+  for (int i = 0; i < num_l; ++i) {
+    std::cout << "Line " << i + 1 << " connections: ";
+    for (const auto& connection : line_graph[i]) {
+      std::cout << "(Line " << connection.first + 1 << ", Station " << connection.second + 1 << ") ";
+    }
+    std::cout << std::endl;
+  }
+  */
 
   int connectivity_index = 0;
   for (int x = 0; x < n; ++x) { // From each station to each station
     for (int y = x + 1; y < n; ++y) { // To avoid double searching since the graph is undirected.
       // Dijkstra to find the minimum number of changes between two stations.
       int min_changes = dijkstra(x, y);
-      if (min_changes == -1) {
+      if (min_changes == -1) { // If no path is found
         std::cout << -1 << std::endl;
         return 0;
       }
