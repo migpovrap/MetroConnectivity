@@ -16,10 +16,10 @@ void buildLineGraph() {
   line_graph.assign(num_l, std::vector<std::pair<int, int>>());
   
   // Map each station to the lines that pass through it
-  for (int station = 0; station < n; ++station) {
-    for (const auto& edge : graph[station]) {
+  for (int i = 0; i < n; ++i) {
+    for (const auto& edge : graph[i]) {
       int line = edge.second;
-      station_to_lines[station].push_back(line); // Add the line to the station's line list
+      station_to_lines[i].push_back(line); // Add the line to the station's line list
     }
   }
   
@@ -43,31 +43,31 @@ void buildLineGraph() {
 int dijkstra(int start, int end) {
   // (number of changes, current station, current line)
   std::priority_queue<std::pair<int, int>,std::vector<std::pair<int, int>>,std::greater<std::pair<int, int>>> pq;
-  std::vector<int> dist(num_l, INT_MAX); // Number of line changes array initialized to maximum value
+  std::vector<int> required_changes(num_l, INT_MAX); // Number of line changes array initialized to maximum value
   
   // Initialize the priority queue with all lines that pass through the start station
   for (int start_line : station_to_lines[start]) {
     pq.emplace(0, start_line); // Starting with no changes for each line
-    dist[start_line] = 0; // Set distance for each start line to 0
+    required_changes[start_line] = 0; // Set distance for each start line to 0
   }
   
   while (!pq.empty()) {
     int changes = pq.top().first;
-    int curr_line = pq.top().second;
+    int current_line = pq.top().second;
     pq.pop();
     
      // Check if the current line passes through the end station
     if (std::find(station_to_lines[end].begin(), 
       station_to_lines[end].end(), 
-      curr_line) != station_to_lines[end].end()) {
+      current_line) != station_to_lines[end].end()) {
       return changes; // Return the number of changes if end station is reached
     }
     
      // Traverse the line graph to find the next possible lines
-    for (const auto& next : line_graph[curr_line]) {
+    for (const auto& next : line_graph[current_line]) {
       int next_line = next.first;
-      if (changes + 1 < dist[next_line]) {
-        dist[next_line] = changes + 1;
+      if (changes + 1 < required_changes[next_line]) {
+        required_changes[next_line] = changes + 1;
         pq.emplace(changes + 1, next_line);
       }
     }
