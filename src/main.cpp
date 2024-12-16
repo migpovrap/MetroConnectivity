@@ -9,44 +9,41 @@ int n, m, num_l; // n: number of stations, m: number of connections, num_l: numb
 std::vector<std::vector<std::pair<int, int>>> graph; // x, y, l: Station x and Station y are connected by line l.
 
 int dijkstra(int start, int end) {
-  // (number of changes, current station, current line)
-  std::priority_queue<std::tuple<int, int, int>, std::vector<std::tuple<int, int, int>>, std::greater<std::tuple<int, int, int>>> priority_queue;
-  std::vector<std::vector<int>> required_line_changes(n, std::vector<int>(num_l, INT_MAX));
-  std::vector<bool> visited(n, false);
+    // (number of changes, current station, current line)
+    std::priority_queue<std::tuple<int, int, int>, std::vector<std::tuple<int, int, int>>, std::greater<std::tuple<int, int, int>>> pq;
+    std::vector<int> min_changes(n, INT_MAX);
+    
+    pq.emplace(0, start, -1); // Start with no line (-1) and 0 changes
+    min_changes[start] = 0;
 
-  for (int i = 0; i < num_l; ++i) {
-    required_line_changes[start][i] = 0;
-  }
-  priority_queue.emplace(0, start, -1); // Start with no line (-1) and 0 changes
+    while (!pq.empty()) {
+        int changes = std::get<0>(pq.top());
+        int current_station = std::get<1>(pq.top());
+        int current_line = std::get<2>(pq.top());
+        pq.pop();
 
-  while (!priority_queue.empty()) {
-    int num_changes, current_station, current_line;
-    std::tie(num_changes, current_station, current_line) = priority_queue.top();
-    priority_queue.pop();
+        if (current_station == end) return changes; // If it as reached the desired station retunrs the required number of line changes
+        if (changes > min_changes[current_station]) continue;
 
-    if (current_station == end) { // If it as reached the desired station retunrs the required number of line changes
-      return num_changes;
+        for (const auto& station : graph[current_station]) {
+            // Count a change only when switching to a different line
+            int next_station = station.first;
+            int next_line = station.second;
+            int new_changes = (current_line != -1 && next_line != current_line) ? changes + 1 : changes; // If not the same line adds one line change, also checks if it is connected
+            
+            if (new_changes < min_changes[next_station]) {
+                min_changes[next_station] = new_changes;
+                pq.emplace(new_changes, next_station, next_line);
+            }
+        }
     }
-
-    if (visited[current_station]) continue; // Advances to the next element in the queue if the stations was already visited
-    visited[current_station] = true;
-
-    for (const auto& next : graph[current_station]) {
-      int next_station = next.first;
-      int next_line = next.second;
-      int next_changes = num_changes + (current_line != next_line && current_line != -1 ? 1 : 0); // If not the same line adds one line change, also checks if it is connected
-
-      if (next_changes < required_line_changes[next_station][next_line]) {
-        required_line_changes[next_station][next_line] = next_changes;
-        priority_queue.emplace(next_changes, next_station, next_line);
-      }
-    }
-  }
-
-  return -1; // No path found
+    return -1; // No path found
 }
 
 int main() {
+  std::ios::sync_with_stdio(0); // disable sync with c libs (printf/scanf)
+  std::cin.tie(0); // discard cin buffer after each line of input
+
   std::cin >> n >> m >> num_l; // n: number of stations, m: number of connections, num_l: number of lines.
 
   graph.resize(n);
@@ -56,6 +53,13 @@ int main() {
     --x; --y; --l; // Convert to 0-based index
     graph[x].emplace_back(y, l);
     graph[y].emplace_back(x, l);
+  }
+  
+  for (int i = 0; i < n; ++i) {
+    if (graph[i].empty()) {
+      std::cout << -1 << std::endl;
+      return 0;
+    }
   }
 
   int connectivity_index = 0;
@@ -70,6 +74,11 @@ int main() {
       }
       // Find the maximum connectivity index.
       connectivity_index = std::max(connectivity_index, min_changes);
+      if (connectivity_index == 0) {
+        // If we've found a path with 0 changes and haven't found any disconnected stations,
+        // the answer must be 0
+        continue;
+      }
     }
   }
 

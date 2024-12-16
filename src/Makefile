@@ -5,7 +5,7 @@ SHELL := /bin/bash
 .PHONY: all run test time clean rm format
 
 TARGET = main
-SRCS = main.cpp
+SRCS =new_main.cpp
 
 all: $(TARGET)
 
@@ -70,7 +70,7 @@ new_test: ../tests/test_generator.cpp
 		last_test_num=0; \
 	fi; \
 	new_test_num=$$((last_test_num + 1)); \
-	for args in '8 8 8 8 8'; do \
+	for args in '5000 7000 2500 1 78'; do \
 		new_test_name=$$(printf "../tests/test%02d.in" $$new_test_num); \
 		../tests/test_generator $$args > "$$new_test_name"; \
 		test_name_no_ext=$$(basename "$$new_test_name" .in); \
