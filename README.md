@@ -49,5 +49,36 @@ The program should write to the output an integer s corresponding to the connect
 **Output:**
 `2`
 
+#### Example 3
+**Input:**
+```
+8 7 3
+3 2 1
+2 7 1
+7 5 1
+2 6 2
+6 4 2
+1 4 3
+1 5 3
+```
+**Output:**
+`-1`
+
+#### Example 4
+**Input:**
+```
+7 8 2
+3 2 1
+2 7 1
+7 5 1
+5 1 1
+1 4 1
+4 6 1
+4 6 2
+2 6 2
+```
+**Output:**
+`0`
+
 ### Solution Description
 Our solution involves creating a new graph using strongly connected components (SCC) and then performing a breadth-first search (BFS) for each metro line to determine the minimum number of line changes required.
