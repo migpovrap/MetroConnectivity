@@ -11,7 +11,7 @@ std::vector<std::vector<int>> station_to_lines;  // Stations and the correspondi
 std::vector<std::vector<std::pair<int, int>>> line_graph;  // Connetions of all the lines
 
 // Function to build a line graph representing transitions between lines and stations
-void buildLineGraph() {
+void build_line_graph() {
   station_to_lines.assign(n, std::vector<int>());
   line_graph.assign(num_l, std::vector<std::pair<int, int>>());
   
@@ -39,40 +39,37 @@ void buildLineGraph() {
   }
 }
 
-// Implementation of Dijkstra's algorithm to find the minimum required line changes
-int dijkstra(int start, int end) {
-  // (number of changes, current station, current line)
-  std::priority_queue<std::pair<int, int>,std::vector<std::pair<int, int>>,std::greater<std::pair<int, int>>> pq;
-  std::vector<int> required_changes(num_l, INT_MAX); // Number of line changes array initialized to maximum value
+int bfs(int start, int end) {
+  std::queue<std::pair<int, int>> queue;  // (line, changes)
+  std::vector<bool> visited(num_l, false);
   
-  // Initialize the priority queue with all lines that pass through the start station
+  // Use existing station_to_lines mapping
   for (int start_line : station_to_lines[start]) {
-    pq.emplace(0, start_line); // Starting with no changes for each line
-    required_changes[start_line] = 0; // Set distance for each start line to 0
+    queue.emplace(start_line, 0);
+    visited[start_line] = true;
   }
   
-  while (!pq.empty()) {
-    int changes = pq.top().first;
-    int current_line = pq.top().second;
-    pq.pop();
+  while (!queue.empty()) {
+    int current_line = queue.front().first;
+    int changes = queue.front().second;
+    queue.pop();
     
-     // Check if the current line passes through the end station
-    if (std::find(station_to_lines[end].begin(), 
-      station_to_lines[end].end(), 
-      current_line) != station_to_lines[end].end()) {
-      return changes; // Return the number of changes if end station is reached
+    // Use existing station_to_lines mapping
+    if (std::find(station_to_lines[end].begin(), station_to_lines[end].end(), current_line) != station_to_lines[end].end()) {
+      return changes;
     }
     
-     // Traverse the line graph to find the next possible lines
-    for (const auto& next : line_graph[current_line]) {
-      int next_line = next.first;
-      if (changes + 1 < required_changes[next_line]) {
-        required_changes[next_line] = changes + 1;
-        pq.emplace(changes + 1, next_line);
+    // Use existing line_graph
+    for (const auto& node : line_graph[current_line]) {
+      int next_line = node.first;
+      int station = node.second;
+      if (!visited[next_line]) {
+        visited[next_line] = true;
+        queue.emplace(next_line, changes + 1);
       }
     }
   }
-  return -1; // Return -1 if no path is founds
+  return -1;
 }
 
 int main() {
@@ -98,7 +95,7 @@ int main() {
     }
   }
 
-  buildLineGraph(); // Construct the line graph based on shared stations
+  build_line_graph(); // Construct the line graph based on shared stations
 
   /*
   for (int i = 0; i < num_l; ++i) {
@@ -114,7 +111,7 @@ int main() {
   for (int x = 0; x < n; ++x) { // From each station to each station
     for (int y = x + 1; y < n; ++y) { // To avoid double searching since the graph is undirected.
       // Dijkstra to find the minimum number of changes between two stations.
-      int min_changes = dijkstra(x, y);
+      int min_changes = bfs(x, y);
       if (min_changes == -1) { // If no path is found
         std::cout << -1 << std::endl;
         return 0;
