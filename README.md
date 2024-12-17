@@ -6,7 +6,7 @@ This is achieved through a metro connectivity index (mc), which is defined as fo
 ```
 mc = max{ML(e1, e2) | e1, e2 ∈ Metro}
 ```
-where ML(e1, e2) denotes the minimum number of line changes required to travel between metro stations e1 and e2.
+where ML(e1, e2) denotes the minimum number of line changes required to travel between stations e1 and e2.
 
 ### Input
 The input file contains information about the entire metro network, which is defined as an undirected multi-graph, where each vertex represents a station in the metro network and each edge represents an indivisible section of a line. Thus, the input file is defined as follows:
