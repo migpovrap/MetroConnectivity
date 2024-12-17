@@ -118,12 +118,12 @@ int main() {
 
   for (int line = 0; line < num_lines; ++line) {
     // Conducts a BFS for each line.
-    int max_changes = bfs(line);
-    if (max_changes == num_lines - 1) {
-      std::cout << max_changes << std::endl;
+    int min_required_changes = bfs(line);
+    if (min_required_changes == num_lines - 1) {
+      std::cout << min_required_changes << std::endl;
       return 0;
     }
-    connectivity_index = std::max(connectivity_index, max_changes);
+    connectivity_index = std::max(connectivity_index, min_required_changes);
   }
 
   std::cout << connectivity_index << std::endl;
