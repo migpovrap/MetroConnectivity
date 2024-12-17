@@ -5,7 +5,7 @@ SHELL := /bin/bash
 .PHONY: all run test time clean rm format
 
 TARGET = main
-SRCS =main_scc.cpp
+SRCS =main.cpp
 
 all: $(TARGET)
 
