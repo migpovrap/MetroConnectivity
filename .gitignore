@@ -35,6 +35,7 @@
 
 # macOS
 .DS_Store
+.clangd
 
 # Executables
 main
