@@ -70,7 +70,7 @@ new_test: ../tests/test_generator.cpp
 		last_test_num=0; \
 	fi; \
 	new_test_num=$$((last_test_num + 1)); \
-	for args in '5000 7000 250 1 78'; do \
+	for args in '10 15 5 1 42' '20 30 10 0 43' '30 45 15 1 44' '40 60 20 0 45' '50 75 25 1 46'; do \
 		new_test_name=$$(printf "../tests/test%02d.in" $$new_test_num); \
 		../tests/test_generator $$args > "$$new_test_name"; \
 		test_name_no_ext=$$(basename "$$new_test_name" .in); \
