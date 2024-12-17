@@ -1,9 +1,9 @@
-#include <iostream>
-#include <vector>
-#include <set>
-#include <queue>
 #include <algorithm>
 #include <climits>
+#include <iostream>
+#include <queue>
+#include <set>
+#include <vector>
 
 int n, m, num_l; // n: number of stations, m: number of connections, num_l: number of lines.
 std::vector<std::vector<std::pair<int, int>>> graph;  // x, y, l: Station x and Station y are connected by line l.
@@ -14,15 +14,16 @@ int connectivity_index = -1;
 void build_line_graph() {
   station_to_lines.assign(n, std::vector<int>());
   line_graph.assign(num_l, std::vector<std::pair<int, int>>());
-  
+
   // Track stations per line
   std::vector<std::set<int>> line_stations(num_l);
-  
+
   for (int station = 0; station < n; ++station) {
     std::set<int> station_lines;
-    
+
     // Collect lines and update line_stations
-    for (const auto& edge : graph[station]) {
+    for (int i = 0; i < (int) graph[station].size(); ++i) {
+      std::pair<int, int> edge = graph[station][i];
       station_lines.insert(edge.second);
       line_stations[edge.second].insert(station);
     }
@@ -32,15 +33,15 @@ void build_line_graph() {
       connectivity_index = 0;
       return;
     }
-    
+
     station_to_lines[station].assign(station_lines.begin(), station_lines.end());
-    
+
     // Build line connections
-    for (auto it1 = station_lines.begin(); it1 != station_lines.end(); ++it1) {
-      auto it2 = it1;
-      for (++it2; it2 != station_lines.end(); ++it2) {
-        line_graph[*it1].emplace_back(*it2, station);
-        line_graph[*it2].emplace_back(*it1, station);
+    std::vector<int> station_lines_vec(station_lines.begin(), station_lines.end());
+    for (size_t i = 0; i < station_lines_vec.size(); ++i) {
+      for (size_t j = i + 1; j < station_lines_vec.size(); ++j) {
+        line_graph[station_lines_vec[i]].emplace_back(station_lines_vec[j], station);
+        line_graph[station_lines_vec[j]].emplace_back(station_lines_vec[i], station);
       }
     }
   }
@@ -49,39 +50,40 @@ void build_line_graph() {
 int bfs(int source_line) {
   std::queue<std::pair<int, int>> queue;  // (line_id, changes)
   std::vector<int> dist(num_l, INT_MAX);  // Track minimum changes to reach each line
-  
+
   // Initialize queue with 0 changes
   queue.emplace(source_line, 0);
   dist[source_line] = 0;  // Source line is already visited
-  
+
   while (!queue.empty()) {
     int current_line = queue.front().first;
     int changes = queue.front().second;
     queue.pop();
-    
+
     // Skip if we found a better path
     if (changes > dist[current_line]) continue;
-    
-    for (const auto& node : line_graph[current_line]) {
+
+    for (int i = 0; i < (int) line_graph[current_line].size(); ++i) {
+      std::pair<int, int> node = line_graph[current_line][i];
       int next_line = node.first;
       // Only count a change if moving to different line
       int new_changes = (next_line != current_line) ? changes + 1 : changes;
-      
+
       if (new_changes < dist[next_line]) {
         dist[next_line] = new_changes;
-        queue.emplace(next_line, new_changes);
+        queue.push(std::make_pair(next_line, new_changes));
       }
     }
   }
-  
-  // Find max reachable distance
-  int max_changes = 0;
+
+  // Find the minumum number of line changes required to reach all other lines
+  int min_required_changes = 0;
   for (int i = 0; i < num_l; ++i) {
     if (dist[i] == INT_MAX) return -1;
-    max_changes = std::max(max_changes, dist[i]);
+    min_required_changes = std::max(min_required_changes, dist[i]);
   }
-  
-  return max_changes;
+
+  return min_required_changes;
 }
 
 int main() {
@@ -117,10 +119,9 @@ int main() {
 
   // Executes the bfs for each line
   for (int line = 0; line < num_l; ++line) {
-    int max_changes = bfs(line);
-    connectivity_index = std::max(connectivity_index, max_changes);
+    int min_required_changes = bfs(line);
+    connectivity_index = std::max(connectivity_index, min_required_changes);
   }
- 
   std::cout << connectivity_index << std::endl;
   return 0;
 }
