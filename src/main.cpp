@@ -43,43 +43,29 @@ void build_line_graph() {
 }
 
 int bfs(int source_line) {
-  std::queue<std::pair<int, int>> queue; // (line_id, changes)
-  std::vector<int> num_line_changes(num_lines, INT_MAX); // Track minimum changes to reach each line. index: line_id, value: changes.
+  std::queue<std::pair<int, int>> queue; // pair<line_id, changes>
+  std::vector<bool> visited(num_lines, false); // Tracks visited lines.
 
-  // Initialize queue with 0 changes.
-  queue.emplace(source_line, 0);
-  num_line_changes[source_line] = 0; // To get to the starting line, no changes are needed.
+  queue.push(std::make_pair(source_line, 0));
+  visited[source_line] = true;
+
+  int changes_furthest_line = 0;
 
   while (!queue.empty()) {
-    int current_line = queue.front().first;
-    int changes = queue.front().second;
+    std::pair<int, int> front = queue.front();
+    int current_line = front.first;
+    int changes = front.second;
     queue.pop();
 
-    // Skip if a better path has been found.
-    if (changes > num_line_changes[current_line]) continue;
-
-    for (size_t i = 0; i < line_graph[current_line].size(); ++i) {
-      int next_line = line_graph[current_line][i];
-      // Increment the number of changes count when transitioning to a different line.
-      int new_changes = (next_line != current_line) ? changes + 1 : changes;
-
-      // If the new number of changes is less than the current number of changes,
-      // update the number of changes and add the line to the queue.
-      if (new_changes < num_line_changes[next_line]) {
-        num_line_changes[next_line] = new_changes;
-        queue.emplace(next_line, new_changes);
+    for (const int& next_line : line_graph[current_line]) {
+      if (!visited[next_line]) {
+        visited[next_line] = true;
+        queue.emplace(next_line, changes + 1);
+        changes_furthest_line = std::max(changes_furthest_line, changes + 1);
       }
     }
   }
-
-  // Find the minumum number of line changes required to reach all other lines
-  int min_required_changes = 0;
-  for (int i = 0; i < num_lines; ++i) {
-    if (num_line_changes[i] == INT_MAX) return -1;
-    min_required_changes = std::max(min_required_changes, num_line_changes[i]);
-  }
-
-  return min_required_changes;
+  return changes_furthest_line;
 }
 
 int main() {
