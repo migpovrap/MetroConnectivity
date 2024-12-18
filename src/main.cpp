@@ -33,8 +33,8 @@ void build_line_graph() {
     }
 
     std::vector<int> lines_vec(lines.begin(), lines.end());
-    for (int line = 0; line < lines_vec.size(); line++) {
-      for (int other_line = line + 1; other_line < lines_vec.size(); other_line++) {
+    for (size_t line = 0; line < lines_vec.size(); line++) {
+      for (size_t other_line = line + 1; other_line < lines_vec.size(); other_line++) {
         line_graph[lines_vec[line]].push_back(lines_vec[other_line]);
         line_graph[lines_vec[other_line]].push_back(lines_vec[line]);
       }
