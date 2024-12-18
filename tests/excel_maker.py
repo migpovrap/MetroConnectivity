@@ -7,8 +7,6 @@ import sys
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.table import Table, TableStyleInfo
-from openpyxl.chart import ScatterChart, Reference, Series
-from openpyxl.chart.trendline import Trendline
 
 def get_test_sizes(test_file):
   with open(test_file, 'r', encoding='utf-8') as file:
@@ -110,7 +108,7 @@ def main():
       cell.value = value
       cell.alignment = Alignment(horizontal="center", vertical="center")
       if isinstance(value, float):
-        cell.number_format = '0.00E+00'  # Format to 3 significant figures
+        cell.number_format = '0.00'  # Format as numbers
 
     # Add average time formula
     start_col = len(result) - num_runs + 1  # First column of execution times
@@ -119,20 +117,21 @@ def main():
     avg_cell = ws.cell(row=row_idx, column=len(result) + 1)
     avg_cell.value = avg_formula
     avg_cell.alignment = Alignment(horizontal="center", vertical="center")
-    avg_cell.number_format = '0.00E+00'  # Format to 3 significant figures
+    avg_cell.number_format = '0.00'  # Format as numbers
 
     # Add standard deviation formula
     stdev_formula = f"=STDEV({chr(64 + start_col)}{row_idx}:{chr(64 + end_col)}{row_idx})"
     stdev_cell = ws.cell(row=row_idx, column=len(result) + 2)
     stdev_cell.value = stdev_formula
     stdev_cell.alignment = Alignment(horizontal="center", vertical="center")
-    stdev_cell.number_format = '0.0E+0'  # Format to 1 significant figure
+    stdev_cell.number_format = '0.0'  # Format as numbers
 
     # Add complexity formula
     complexity_formula = f"=B{row_idx}^{station_exponent}*D{row_idx}^{lines_exponent}+C{row_idx}*{use_connections}"
     complexity_cell = ws.cell(row=row_idx, column=len(result) + 3)
     complexity_cell.value = complexity_formula
     complexity_cell.alignment = Alignment(horizontal="center", vertical="center")
+    complexity_cell.number_format = '0.00E+00'  # Format as scientific
 
   # Define table range
   table_end_col = len(headers)
@@ -156,39 +155,6 @@ def main():
     for row in range(1, len(results) + 2):  # Include header row
       cell = ws.cell(row=row, column=col)
       cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-
-  # Add Scatter Plot
-  chart = ScatterChart()
-  chart.title = "Complexity vs Average Time"
-  chart.x_axis.title = "Complexity"
-  chart.y_axis.title = "Average Time (s)"
-
-  # Add major and minor grid lines
-
-  # Show gridlines
-  ws.sheet_view.showGridLines = True
-  # Tick Marks
-  chart.x_axis.majorTickMark = "cross"
-  chart.x_axis.minorTickMark = "out"
-
-  # Define data ranges
-  result_length = len(results[0]) if results else 0
-  complexity_range = Reference(ws, min_col=result_length + 3, min_row=2, max_row=len(results) + 1)
-  avg_time_range = Reference(ws, min_col=result_length + 1, min_row=2, max_row=len(results) + 1)
-
-  # Add series to chart
-  series = Series(avg_time_range, xvalues=complexity_range)
-  chart.series.append(series)
-
-  # Add trendline
-  trendline = Trendline(trendlineType="linear")
-  series.trendline = trendline
-
-  # Remove the legend
-  chart.legend = None
-
-  # Add chart to sheet
-  ws.add_chart(chart, f"E{len(results) + 5}")
 
   # Remove the file if it already exists
   if os.path.exists(output_file):
