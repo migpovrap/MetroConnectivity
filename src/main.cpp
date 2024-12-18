@@ -7,40 +7,36 @@
 
 int num_stations, num_connections, num_lines;
 // Adjacency list representing the graph.
-std::vector<std::vector<std::pair<int, int>>> graph; // index: station1, values: (station2, connecting line).
-std::vector<std::vector<int>> station_to_lines; // index: stations, values: the various lines the station is on simultaneously.
-std::vector<std::vector<std::pair<int, int>>> line_graph; // index: line, values: (line, station).
+std::vector<std::vector<int>> graph; // index: line, value: station.
+std::vector<std::vector<int>> line_graph; // index: line, values: connected lines.
 int connectivity_index = -1;
 
-void build_scc_graph() {
-  station_to_lines.assign(num_stations, std::vector<int>());
-  line_graph.assign(num_lines, std::vector<std::pair<int, int>>());
+void build_line_graph() {
+  line_graph.assign(num_lines, std::vector<int>());
 
-  std::vector<std::set<int>> line_stations(num_lines); // index: line, values: stations on the line (set).
+  // Create a map to store which lines pass through each station.
+  std::vector<std::set<int>> station_to_lines(num_stations);
 
-  for (int station = 0; station < num_stations; ++station) {
-    std::set<int> station_lines;
-
-    // Gather lines connected to the current station and update line_stations.
-    for (std::vector<std::pair<int, int>>::iterator connection = graph[station].begin(); connection != graph[station].end(); ++connection) {
-      station_lines.insert(connection->second);
-      line_stations[connection->second].insert(station);
+  for (int line = 0; line < num_lines; ++line) {
+    for (int station : graph[line]) {
+      station_to_lines[station].insert(line);
     }
+  }
+
+  // Build the line-to-line graph.
+  for (int station = 0; station < num_stations; ++station) {
+    const std::set<int>& lines = station_to_lines[station];
 
     // If all stations are connected via the same line the number of changes is 0.
-    if (station_lines.size() == (size_t) num_lines) {
+    if (lines.size() == (size_t) num_lines) {
       connectivity_index = 0;
       return;
     }
 
-    station_to_lines[station].assign(station_lines.begin(), station_lines.end());
-
-    // Build line connections.
-    for (std::set<int>::iterator line1 = station_lines.begin(); line1 != station_lines.end(); ++line1) {
-      std::set<int>::iterator line2 = line1;
-      for (++line2; line2 != station_lines.end(); ++line2) {
-        line_graph[*line1].emplace_back(*line2, station);
-        line_graph[*line2].emplace_back(*line1, station);
+    for (std::set<int>::iterator line1 = lines.begin(); line1 != lines.end(); ++line1) {
+      for (std::set<int>::iterator line2 = std::next(line1); line2 != lines.end(); ++line2) {
+        line_graph[*line1].push_back(*line2);
+        line_graph[*line2].push_back(*line1);
       }
     }
   }
@@ -63,7 +59,7 @@ int bfs(int source_line) {
     if (changes > num_line_changes[current_line]) continue;
 
     for (size_t i = 0; i < line_graph[current_line].size(); ++i) {
-      int next_line = line_graph[current_line][i].first;
+      int next_line = line_graph[current_line][i];
       // Increment the number of changes count when transitioning to a different line.
       int new_changes = (next_line != current_line) ? changes + 1 : changes;
 
@@ -91,30 +87,31 @@ int main() {
   std::cin.tie(0); // Discard cin buffer after each line of input
 
   std::cin >> num_stations >> num_connections >> num_lines;
-  graph.resize(num_stations);
+  graph.resize(num_lines);
+  std::vector<bool> station_has_connection(num_stations, false);
+
   for (int i = 0; i < num_connections; ++i) {
     int station1, station2, line;
     std::cin >> station1 >> station2 >> line;
     --station1; --station2; --line; // Convert to 0-based indexing
-    graph[station1].emplace_back(station2, line); // Add connection from station 1 to station 2.
-    graph[station2].emplace_back(station1, line); // Add reverse connection from station 2 to station 1.
+    if (!station_has_connection[station1]) {
+      station_has_connection[station1] = true;
+    }
+    if (!station_has_connection[station2]) {
+      station_has_connection[station2] = true;
+    }
+    graph[line].push_back(station1); // Add station1 to the line.
+    graph[line].push_back(station2); // Add station2 to the line.
   }
 
-  // Check if any station is disconnected.
-  for (int i = 0; i < num_stations; ++i) {
-    if (graph[i].empty()) {
-      std::cout << -1 << std::endl; // If so return -1 and exit early as the graph is invalid.
+  for (int station = 0; station < num_stations; ++station) {
+    if (!station_has_connection[station]) {
+      std::cout << -1 << std::endl;
       return 0;
     }
   }
 
-  build_scc_graph(); // Build the SCC graph.
-
-  // Early return if station connects all lines.
-  if (connectivity_index == 0) {
-    std::cout << 0 << std::endl;
-    return 0;
-  }
+  build_line_graph(); // Build the SCC graph.
 
   for (int line = 0; line < num_lines; ++line) {
     // Conducts a BFS for each line.
