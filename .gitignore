@@ -44,3 +44,7 @@ test_generator
 # Test Results
 tests/*.diff
 tests/*.result
+
+# Project Report
+*.xlsx
+*.docx

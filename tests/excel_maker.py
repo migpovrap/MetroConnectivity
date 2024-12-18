@@ -1,3 +1,5 @@
+# type: ignore
+# pylint:skip-file
 import os
 import time
 import subprocess
@@ -27,6 +29,9 @@ def wrap_text(header_text, max_length=30):
   Wrap text to fit in at most two lines, splitting only at spaces.
   Will not break words in the middle.
   """
+  if ' ' not in header_text:
+    return header_text
+
   words = header_text.split()
   wrapped_lines = []
   current_line = ""
@@ -34,6 +39,8 @@ def wrap_text(header_text, max_length=30):
   for word in words:
     # If adding this word exceeds the max_length, start a new line
     if len(current_line) + len(word) + 1 > max_length:
+      if len(wrapped_lines) == 1:  # Ensure only two lines
+        break
       wrapped_lines.append(current_line)
       current_line = word
     else:
@@ -49,25 +56,27 @@ def wrap_text(header_text, max_length=30):
 
 def main():
   tests_folder = os.path.dirname(os.path.abspath(__file__))
-  if len(sys.argv) != 4:
-    print("Usage: python excel_maker.py <number_of_runs> <num_stations> <num_connections> <num_lines>")
+  project_root = os.path.abspath(os.path.join(tests_folder, os.pardir))
+  if len(sys.argv) != 5:
+    print("Usage: python excel_maker.py <number_of_runs> <station_exponent> <use_connections> <lines_exponent>")
     sys.exit(1)
 
   num_runs = int(sys.argv[1])
-  m_exponent = float(sys.argv[2])
-  n_exponent = float(sys.argv[3])
+  station_exponent = int(sys.argv[2])
+  use_connections = int(sys.argv[3])
+  lines_exponent = int(sys.argv[4])
 
-  output_file = "ASA_Relatório.xlsx"
+  output_file = os.path.join(project_root, "ASA_Relatório.xlsx")
 
   wb = Workbook()
   ws = wb.active
   ws.title = "Results"
 
   # Create headers
-  headers = ["Test File", "Operation Table Size", "Sequence Size"]
+  headers = ["Test File", "Stations", "Connections", "Lines"]
   for run in range(num_runs):
     headers.append(f"Time {run + 1}")
-  headers.append("Average Time (s)")
+  headers.append("Average Time")
   headers.append("Uncertainty")
   headers.append("Complexity")
 
@@ -87,9 +96,9 @@ def main():
   for test_file in os.listdir(tests_folder):
     if test_file.endswith('.in'):
       test_path = os.path.join(tests_folder, test_file)
-      matrix_size, sequence_size = get_test_sizes(test_path)
+      num_stations, num_connections, num_lines = get_test_sizes(test_path)
       execution_times = [run_program(test_path) for _ in range(num_runs)]
-      results.append([test_file, matrix_size, sequence_size] + execution_times)
+      results.append([test_file, num_stations, num_connections, num_lines] + execution_times)
 
   # Sort results alphabetically by test file name
   results.sort(key=lambda x: x[0])
@@ -120,7 +129,7 @@ def main():
     stdev_cell.number_format = '0.0E+0'  # Format to 1 significant figure
 
     # Add complexity formula
-    complexity_formula = f"=B{row_idx}^{m_exponent}*C{row_idx}^{n_exponent}"
+    complexity_formula = f"=B{row_idx}^{station_exponent}*D{row_idx}^{lines_exponent}+C{row_idx}*{use_connections}"
     complexity_cell = ws.cell(row=row_idx, column=len(result) + 3)
     complexity_cell.value = complexity_formula
     complexity_cell.alignment = Alignment(horizontal="center", vertical="center")
@@ -140,10 +149,10 @@ def main():
   table.tableStyleInfo = style
   ws.add_table(table)
 
-  # Set all column widths to 10 and wrap text
+  # Set all column widths to 12 and wrap text
   for col in range(1, len(headers) + 1):
     col_letter = chr(64 + col)
-    ws.column_dimensions[col_letter].width = 10  # Set column width to 10
+    ws.column_dimensions[col_letter].width = 12  # Set column width to 12
     for row in range(1, len(results) + 2):  # Include header row
       cell = ws.cell(row=row, column=col)
       cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -186,7 +195,6 @@ def main():
     os.remove(output_file)
 
   wb.save(output_file)
-  print(f"Results saved to {output_file}")
 
 if __name__ == '__main__':
   main()

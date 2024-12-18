@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++11 -O3 -Wall -lm
 SHELL := /bin/bash
 
-.PHONY: all run format test new_test time excel clean rm
+.PHONY: all run format test new_tests time excel clean rm
 
 TARGET = main
 SRCS = main.cpp
@@ -50,21 +50,21 @@ test: $(TARGET)
 	echo "Tests passed $$passed_tests out of $$total_tests"; \
 	$(MAKE) -s clean
 
-new_test: $(TEST_GENERATOR_PATH).cpp
+new_tests: $(TARGET) $(TEST_GENERATOR_PATH).cpp
 	@$(CXX) $(CXXFLAGS) -o $(TEST_GENERATOR_PATH) $(TEST_GENERATOR_PATH).cpp
 	@last_test_num=$$(ls $(TEST_PATH)/test*.in 2>/dev/null | grep -o '[0-9]\+' | sort -n | tail -1 | sed 's/^0*//'); \
 	if [ -z "$$last_test_num" ]; then \
 		last_test_num=0; \
 	fi; \
 	new_test_num=$$((last_test_num + 1)); \
-	for args in "10 15 5 1 42" "20 30 10 0 43" "30 45 15 1 44" "40 60 20 0 45" "50 75 25 1 46"; do \
+	while IFS= read -r args; do \
 		new_test_name=$$(printf "$(TEST_PATH)/test%02d.in" $$new_test_num); \
 		$(TEST_GENERATOR_PATH) $$args > "$$new_test_name"; \
 		test_name_no_ext=$$(basename "$$new_test_name" .in); \
 		python3 $(GRAPH_MAKER_PATH) "$(TEST_PATH)/$$test_name_no_ext"; \
 		new_test_num=$$((new_test_num + 1)); \
-	done
-	@$(MAKE) -s rm
+	done < $(TEST_PATH)/new_tests.txt
+	@$(MAKE) -s rm clean
 
 time: $(TARGET)
 	@for input in $(wildcard $(TEST_PATH)/*.in); do \
@@ -74,12 +74,13 @@ time: $(TARGET)
 	done
 	@$(MAKE) -s clean
 
-excel:
-	@runs=$(word 1, $(MAKECMDGOALS)); \
-	stations=$(word 2, $(MAKECMDGOALS)); \
-	connections=$(word 3, $(MAKECMDGOALS)); \
-	lines=$(word 4, $(MAKECMDGOALS)); \
-	python3 $(EXCEL_MAKER_PATH) $$runs $$stations $$connections $$lines
+excel: $(TARGET)
+	@if [ -z "$(r)" ] || [ -z "$(s)" ] || [ -z "$(c)" ] || [ -z "$(l)" ]; then \
+		echo "Usage: make excel r = <num_runs> s = <stations_exp> c = <use_connections> l = <lines_exponent>"; \
+	else \
+		python3 $(EXCEL_MAKER_PATH) $(r) $(s) $(c) $(l); \
+	fi
+	@$(MAKE) -s rm clean
 
 clean:
 	@rm -f $(TARGET)
