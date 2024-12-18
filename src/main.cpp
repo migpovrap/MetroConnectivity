@@ -15,7 +15,6 @@ void build_line_graph() {
 
   // Create a map to store which lines pass through each station.
   std::vector<std::unordered_set<int>> station_to_lines(num_stations);
-  std::vector<std::unordered_set<int>> station_to_lines(num_stations);
 
   for (int line = 0; line < num_lines; ++line) {
     for (int station : graph[line]) {
@@ -25,7 +24,6 @@ void build_line_graph() {
 
   // Build the line-to-line graph.
   for (int station = 0; station < num_stations; ++station) {
-    const std::unordered_set<int>& lines = station_to_lines[station];
     const std::unordered_set<int>& lines = station_to_lines[station];
 
     // If all stations are connected via the same line the number of changes is 0.
@@ -47,18 +45,13 @@ void build_line_graph() {
 int bfs(int source_line) {
   std::queue<int> queue; // Only store line_id
   std::vector<int> changes(num_lines, -1); // Tracks changes to reach each line
-  std::queue<int> queue; // Only store line_id
-  std::vector<int> changes(num_lines, -1); // Tracks changes to reach each line
 
-  queue.push(source_line);
-  changes[source_line] = 0;
   queue.push(source_line);
   changes[source_line] = 0;
 
   int changes_furthest_line = 0;
 
   while (!queue.empty()) {
-    int current_line = queue.front();
     int current_line = queue.front();
     queue.pop();
 
