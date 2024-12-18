@@ -2,6 +2,7 @@
 #include <iostream>
 #include <queue>
 #include <unordered_set>
+#include <unordered_set>
 #include <vector>
 
 int num_stations, num_connections, num_lines;
@@ -14,6 +15,7 @@ void build_line_graph() {
 
   // Create a map to store which lines pass through each station.
   std::vector<std::unordered_set<int>> station_to_lines(num_stations);
+  std::vector<std::unordered_set<int>> station_to_lines(num_stations);
 
   for (int line = 0; line < num_lines; ++line) {
     for (int station : graph[line]) {
@@ -24,6 +26,7 @@ void build_line_graph() {
   // Build the line-to-line graph.
   for (int station = 0; station < num_stations; ++station) {
     const std::unordered_set<int>& lines = station_to_lines[station];
+    const std::unordered_set<int>& lines = station_to_lines[station];
 
     // If all stations are connected via the same line the number of changes is 0.
     if (lines.size() == (size_t) num_lines) {
@@ -31,10 +34,11 @@ void build_line_graph() {
       return;
     }
 
-    for (std::unordered_set<int>::const_iterator line1 = lines.begin(); line1 != lines.end(); ++line1) {
-      for (std::unordered_set<int>::const_iterator line2 = std::next(line1); line2 != lines.end(); ++line2) {
-        line_graph[*line1].push_back(*line2);
-        line_graph[*line2].push_back(*line1);
+    std::vector<int> lines_vec(lines.begin(), lines.end());
+    for (int line = 0; line < lines_vec.size(); line++) {
+      for (int other_line = line + 1; other_line < lines_vec.size(); other_line++) {
+        line_graph[lines_vec[line]].push_back(lines_vec[other_line]);
+        line_graph[lines_vec[other_line]].push_back(lines_vec[line]);
       }
     }
   }
@@ -43,7 +47,11 @@ void build_line_graph() {
 int bfs(int source_line) {
   std::queue<int> queue; // Only store line_id
   std::vector<int> changes(num_lines, -1); // Tracks changes to reach each line
+  std::queue<int> queue; // Only store line_id
+  std::vector<int> changes(num_lines, -1); // Tracks changes to reach each line
 
+  queue.push(source_line);
+  changes[source_line] = 0;
   queue.push(source_line);
   changes[source_line] = 0;
 
@@ -51,10 +59,10 @@ int bfs(int source_line) {
 
   while (!queue.empty()) {
     int current_line = queue.front();
+    int current_line = queue.front();
     queue.pop();
 
-    for (std::vector<int>::const_iterator next_line_it = line_graph[current_line].begin(); next_line_it != line_graph[current_line].end(); ++next_line_it) {
-      int next_line = *next_line_it;
+    for (const int& next_line : line_graph[current_line]) {
       if (changes[next_line] == -1) {
         changes[next_line] = changes[current_line] + 1;
         queue.push(next_line);
