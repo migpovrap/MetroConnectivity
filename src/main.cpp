@@ -13,7 +13,7 @@ int connectivity_index = -1;
 void build_line_graph() {
   line_graph.assign(num_lines, std::vector<int>());
 
-  // Create a map to store which lines pass through each station.
+  // Store the lines that pass through each station.
   std::vector<std::unordered_set<int>> station_to_lines(num_stations);
 
   for (int line = 0; line < num_lines; ++line) {

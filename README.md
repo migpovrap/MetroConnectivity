@@ -79,6 +79,3 @@ The program should write to the output an integer s corresponding to the connect
 ```
 **Output:**
 `0`
-
-### Solution Description
-Our solution involves creating a new graph using strongly connected components (SCC) and then performing a breadth-first search (BFS) for each metro line to determine the minimum number of line changes required.
