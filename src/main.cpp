@@ -43,7 +43,7 @@ void build_line_graph() {
 }
 
 int bfs(int source_line) {
-  std::queue<int> queue; // Only store line_id
+  std::queue<int> queue;
   std::vector<int> changes(num_lines, -1); // Tracks changes to reach each line
 
   queue.push(source_line);
@@ -86,8 +86,8 @@ int main() {
     if (!station_has_connection[station2]) {
       station_has_connection[station2] = true;
     }
-    graph[line].push_back(station1); // Add station1 to the line.
-    graph[line].push_back(station2); // Add station2 to the line.
+    graph[line].push_back(station1);
+    graph[line].push_back(station2);
   }
 
   for (int station = 0; station < num_stations; ++station) {
