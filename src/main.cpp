@@ -24,19 +24,16 @@ void build_line_graph() {
 
   // Build the line-to-line graph.
   for (int station = 0; station < num_stations; ++station) {
-    const std::unordered_set<int>& lines = station_to_lines[station];
-
     // If all stations are connected via the same line the number of changes is 0.
-    if (lines.size() == (size_t) num_lines) {
+    if (station_to_lines[station].size() == (size_t) num_lines) {
       connectivity_index = 0;
       return;
     }
-
-    std::vector<int> lines_vec(lines.begin(), lines.end());
-    for (size_t line = 0; line < lines_vec.size(); line++) {
-      for (size_t other_line = line + 1; other_line < lines_vec.size(); other_line++) {
-        line_graph[lines_vec[line]].push_back(lines_vec[other_line]);
-        line_graph[lines_vec[other_line]].push_back(lines_vec[line]);
+    std::vector<int> lines_vector(station_to_lines[station].begin(), station_to_lines[station].end());
+    for (size_t line = 0; line < lines_vector.size(); line++) {
+      for (size_t other_line = line + 1; other_line < lines_vector.size(); other_line++) {
+        line_graph[lines_vector[line]].push_back(lines_vector[other_line]);
+        line_graph[lines_vector[other_line]].push_back(lines_vector[line]);
       }
     }
   }
